@@ -2,7 +2,7 @@
  * Parsed mongoose model - `user`
  * @revision 0.0.1
  * @parser_version 0.0.6
- * @generated 2014-01-04T19:16:00.353Z
+ * @generated 2014-01-04T19:35:43.268Z
  */
 
 //[
@@ -12,7 +12,7 @@ model.schema = mongooseModel.schema;
 model.entity = mongooseModel.model;
 model.form = {};
 var schema = JSON.parse({
-    "name": {
+	"name": {
         "first": {
             "type": "text",
             "required": true,
@@ -20,13 +20,16 @@ var schema = JSON.parse({
                 "trim"
             ],
             "validators": [
-                "function (v) {if(v.length < 4) { return false } return true;}"
+                "function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}"
             ]
         },
         "middle": {
             "type": "text",
             "filters": [
                 "trim"
+            ],
+            "validators": [
+                "function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}"
             ]
         },
         "last": {
@@ -42,8 +45,10 @@ var schema = JSON.parse({
         "required": true,
         "unique": true,
         "filters": [
-            "lowercase",
             "trim"
+        ],
+        "validators": [
+            "function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}"
         ]
     },
     "pass_hash": {

@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /* Mongo model parser
  * @author Michal Tanecek
- * @version 0.0.6
+ * @version 0.0.7
  * @licence BSD
  * @todo: Relations
 
  * version history:
+ * 0.0.7:
+ * replace whitespaces with tab \x20{4} => \t
  * 0.0.6:
  * added support fot validate callback functions
  * added support for buld-in validators min,max,match
@@ -35,7 +37,7 @@ var marks = ['required','unique','disabled','disabled'];
 var filters = ['lowercase' ,'uppercase','trim'];
 
 program
-  .version('0.0.6')
+  .version('0.0.7')
   .option('-m, --model [name]', 'Set model')
   .option('-p, --path [path]','Set custom model path', path.normalize('../../app/model'))
   .option('-f, --force','Force parser to rewrite exists file')
@@ -58,7 +60,12 @@ _model = require(_modelFile);
 
 var file = path.normalize(_path +'/'+program.model+'.parsed.js');
 
+
 _schema = JSON.stringify(parse(_model.schema.tree),undefined, 4);
+
+while(_schema.match(/\x20{4}/)) {
+	_schema = _schema.replace(/\x20{4}/,'\t');
+}
 
 if(fs.existsSync(file) && !program.force) {
 	var data = fs.readFileSync(file).toString();
@@ -114,7 +121,6 @@ function vocabulary_replace(source,target) {
 
 function parse(source) {
 	var target = {};
-
 	var props = Object.getOwnPropertyNames(source);
 	var i;
 	for(i =0; i < props.length; i++) {
@@ -148,8 +154,9 @@ function parse(source) {
 						var item = primitives[j];
 						var re = new RegExp('^'+item,"g");
 						var field = source[props[i]];
+						
 						if(type.match(re) || item == 'String') {
-							target[props[i]] = {
+								target[props[i]] = {
 								type: inputConversion[item]
 							}
 							
@@ -167,10 +174,9 @@ function parse(source) {
 							});
 							
 							if(field.validate) {
-								if(typeof field.validate.toString !== undefined) {
-									if(!Array.isArray(target[props[i]].validators))
-										target[props[i]].validators = [];
-								}
+								if(!Array.isArray(target[props[i]].validators))
+									target[props[i]].validators = [];
+
 								if(Array.isArray(field.validate)) {
 									if(typeof field.validate[0].toString !== undefined) {
 										target[props[i]].validators.push([field.validate[0].toString(),field.validate[1]]);

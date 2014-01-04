@@ -12,11 +12,11 @@ module.exports = function(app) {
 
     // api
     var user = require('./model/user')
-
+    var harbinger = require('./model/harbinger')
 
 
     baucis.rest('User')
-
+    baucis.rest('Harbinger')
     app.use('/api', baucis({ swagger: true }));
 
     // ----------------- 
