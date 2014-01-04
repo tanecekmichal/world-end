@@ -1,0 +1,14 @@
+{
+  "http": {
+    "port": 3000,
+    "ip": "127.0.0.1",
+  },
+  "app" : {
+    "name": "World ends",
+    "timeZone" : "CET",
+    "env_mode" : "development"
+  },
+  "multimedia" : {
+  	"punlic_root" : "app/public"
+  }
+}

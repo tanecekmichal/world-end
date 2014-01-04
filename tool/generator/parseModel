@@ -1,0 +1,190 @@
+#!/usr/bin/env node
+/* Mongo model parser
+ * @author Michal Tanecek
+ * @version 0.0.5
+ * @licence BSD
+ * @todo: Enums, Mongoose validators (min,max,match),remove forEach with exception to FOR loop
+ *
+ */
+var  program = require('commander')
+	,fs = require('fs')
+	,path = require('path')
+	;
+
+var _model;
+var _path;
+var _schema = {};
+var _modelFile;
+var _patches = '//[patches\n\n\n//patches]';
+
+var primitives = ['Email','Url','Number','Date','Boolean','String'];
+var inputConversion = {'Email': 'email','Url': 'url', 'Number':'number','Date':'date','Boolean' : 'checkbox','String':'text'};
+var marks = ['required','unique','disabled','disabled'];
+var filters = ['lowercase' ,'uppercase','trim'];
+
+program
+  .version('0.0.5')
+  .option('-m, --model [name]', 'Set model')
+  .option('-p, --path [path]','Set custom model path', path.normalize('../../app/model'))
+  .option('-f, --force','Force parser to rewrite exists file')
+  .option('-r, --revision','Set model revision','0.0.1')
+  .parse(process.argv);
+
+if(!program.model) {
+	console.error('Error: Provide model, for more information run script with --help argument.')
+	process.exit();
+}
+_path = path.normalize(program.path);
+
+if(program.model.match('/.js$/'))
+	_modelFile = _path+'/'+program.model.replace('/.js$/','');
+else
+	_modelFile = _path+'/'+program.model;
+
+_model = require(_modelFile);
+
+var file = path.normalize(_path +'/'+program.model+'.parsed.js');
+
+_schema = JSON.stringify(parse(_model.schema.tree),undefined, 4);
+
+if(fs.existsSync(file) && !program.force) {
+	var data = fs.readFileSync(file).toString();
+	var patches = data.match(/\/\/\[patches(.|[\r\n])*\/\/patches\]/);
+	if(Array.isArray(patches)) {
+		patches = patches[0];
+	}
+	_patches = patches; 
+} 
+var _tmpl = [
+	 '/*\n'
+	,' * Parsed mongoose model - `#model#`\n'
+	,' * @revision #revision#\n'
+	,' * @parser_version #parser_version#\n'
+	,' * @generated #iso#\n'
+	,' */\n\n'
+	,'//[\n'
+	,'var model = {};\n'
+	,'var mongooseModel = require(\'#modelFile#\');\n'
+	,'model.schema = mongooseModel.schema;\n'
+	,'model.entity = mongooseModel.model;\n'
+	,'model.form = {};\n'
+	,'var schema = JSON.parse('
+	,'#schema#'
+	,');\n'
+	,'//]\n'
+	,'#patches#'
+	,'\n model.form.schema = schema;'
+	,'\nexports = module.exports = model;'
+];
+var replaces = {
+	 'model' : program.model
+	,'revision': program.revision
+	,'parser_version': program._version
+	,'iso' : (new Date).toISOString()
+	,'modelFile' : _modelFile
+	,'schema': _schema
+	,'patches' : _patches
+};
+_tmpl = vocabulary_replace(replaces,_tmpl.join(''));
+fs.writeFileSync(file,_tmpl)
+
+
+function vocabulary_replace(source,target) {
+	var  strings = Object.getOwnPropertyNames(source)
+		,i = 0;
+	for(; i < strings.length; i++) {
+		target = target.replace('#'+strings[i]+'#',source[strings[i]]);
+	}
+	return target;
+}
+
+
+function parse(source) {
+	var target = {};
+
+	var props = Object.getOwnPropertyNames(source);
+	var i;
+	for(i =0; i < props.length; i++) {
+		// simple types
+		if(typeof source[props[i]] == 'function') {
+			try {
+				primitives.forEach(function(item){
+					var re = new RegExp(item,"g");
+					if((source[props[i]].toString().match(re) || item == 'String') && (props[i] != '__v')) {
+						target[props[i]] = {
+							type: inputConversion[item]
+						}
+						throw BreakException;
+					}
+				})
+			} catch(e) {}   	
+		} 
+		// objects
+		else {
+			// field
+			if(typeof source[props[i]].type != 'undefined') {
+				var type = (source[props[i]].type.toString()).replace('function ','')
+				//console.log(type,props[i])
+				if(props[i] == '_id') {
+					target[props[i]] = {
+						type: 'Text',
+						pk : true
+					}
+
+				} else {
+					try {
+						primitives.forEach(function(item){
+							var re = new RegExp('^'+item,"g");
+							var field = source[props[i]];
+							if(type.match(re) || item == 'String') {
+								target[props[i]] = {
+									type: inputConversion[item]
+								}
+								marks.forEach(function(j){
+									if(field[j])
+										target[props[i]][j] = true;
+								});
+								filters.forEach(function(j){
+									if(field[j]) {
+										if(target[props[i]].filters === undefined)
+											target[props[i]].filters = [];
+										target[props[i]].filters.push(j);
+									}
+								});
+								if(field.fulltext)
+									target[props[i]].type = 'textarea';
+								if(field.default) {
+									switch(typeof field.default) {
+										case 'function':
+											var def = field.default.toString();
+											if(def.match(/^function now/)) {
+												var fn = function() {return new Date();}
+												target[props[i]].default = fn.toString();
+											} 
+										break;
+
+										default:
+											target[props[i]].default = field.default;
+										break; 
+									}
+									
+								}
+								throw BreakException;
+							}
+						})
+					} catch(e) {
+						//console.log(props[i])
+					}   	
+
+				}
+			} 
+			// array of fields .. or error in schema
+			else {
+				target[props[i]] = parse(source[props[i]]);
+				//console.log(source[props[i]])
+			}
+		}
+	
+	}
+	return target;
+}

@@ -1,0 +1,14 @@
+{
+  "http": {
+    "port": 3333,
+    "ip": "127.0.0.1"
+  },
+  
+  "app" : {
+    "process_name" : "world-ends",
+    "name": "World ends",
+    "timeZone" : "CET",
+    "env_mode" : "development",
+    "cokkies_secret" : "somenthing random"
+  }
+}

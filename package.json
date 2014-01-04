@@ -1,0 +1,39 @@
+{
+  "name": "world-end",
+  "version": "0.0.1",
+  "description": "Another end-of-world is comming ...",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tanecekmichal/world-end.git"
+  },
+  "author": "Michal Taneček",
+  "license": "GPL V3",
+  "bugs": {
+    "url": "https://github.com/tanecekmichal/world-end/issues"
+  },
+  "homepage": "https://github.com/tanecekmichal/world-end",
+  "dependencies": {
+      "jade" : "latest",
+      "connect": "latest",
+      "express" : "latest",
+      "async":"latest",
+      "mime":"latest",
+      
+      "mongo" : "latest",
+      "mongoose" : "latest",
+      "mongoose-types" : "latest",
+      "forms" : "latest",
+
+      "colors" : "latest",
+      "querystring" : "latest",
+
+      "commander" : "latest",
+
+      "baucis" : "latest"
+  
+    }
+}
