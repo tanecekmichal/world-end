@@ -1,8 +1,8 @@
 /*
  * Parsed mongoose model - `user`
- * @revision undefined
- * @parser_version 0.0.5
- * @generated 2014-01-04T17:58:59.732Z
+ * @revision 0.0.1
+ * @parser_version 0.0.6
+ * @generated 2014-01-04T19:16:00.353Z
  */
 
 //[
@@ -18,6 +18,9 @@ var schema = JSON.parse({
             "required": true,
             "filters": [
                 "trim"
+            ],
+            "validators": [
+                "function (v) {if(v.length < 4) { return false } return true;}"
             ]
         },
         "middle": {
@@ -54,17 +57,28 @@ var schema = JSON.parse({
     "bio": {
         "type": "textarea"
     },
-    "last_login": {
-        "type": "date"
+    "age": {
+        "type": "number",
+        "validators": [
+            "function anonymous(v) {\nif (v <5) {return false;} else {return true;}\n}",
+            "function anonymous(v) {\nif (v >120) {return false;} else {return true;}\n}"
+        ]
     },
-    "last_ip": {
-        "type": "text"
+    "gender": {
+        "type": "select",
+        "options": [
+            "m",
+            "f",
+            "u"
+        ]
     },
     "allowed": {
-        "type": "checkbox"
+        "type": "checkbox",
+        "default": false
     },
     "verified": {
-        "type": "checkbox"
+        "type": "checkbox",
+        "default": false
     },
     "user_group": {
         "type": "text",
@@ -72,7 +86,7 @@ var schema = JSON.parse({
     },
     "added": {
         "type": "date",
-        "default": "function () {return new Date();}"
+        "default": "function anonymous() {\nreturn new Date()\n}"
     },
     "_id": {
         "type": "Text",
@@ -81,11 +95,8 @@ var schema = JSON.parse({
 });
 //]
 //[patches
-schema.last_ip.disabled = true;
 schema.allowed.disabled = true;
-schema.verified.disabled = true;
-
 
 //patches]
- model.form.schema = schema;
+model.form.schema = schema;
 exports = module.exports = model;

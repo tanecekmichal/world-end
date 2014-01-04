@@ -7,14 +7,34 @@ var Schema = mongoose.Schema;
 
 var Email = mongoose.SchemaTypes.Email;
 
+var nameLength = function(v) {if(v.length < 4 || v.length > 50) { return false } return true;}
+
 var userSchema = new Schema({
 	name: {
-	    first: { type: String, required: true,trim: true},
-	    middle: { type: String, required: false,trim: true},	
+	    first: { 
+	    	 type: String
+	    	,required: true
+	    	,trim: true
+	    	,validate: nameLength
+	    },
+	    
+	    middle: { 
+	    	 type: String
+	    	,required: false
+	    	,trim: true
+	    	,validate: nameLength
+	    },	
+	    
 	    last: { type: String, required: true, trim: true}	
 	},
 
-	email: { type: Email, unique: true,required: true,lowercase: true,trim: true},	
+	email: { 
+		type: Email
+		,unique: true
+		,required: true
+		,trim: true
+		,validate: nameLength
+	},	
 
 	pass_hash: {type: String, disabled: true },
 	pass_salt: {type: String, disabled: true },
@@ -23,7 +43,16 @@ var userSchema = new Schema({
 
 	last_login: Date,
 	last_ip: String,
-
+	
+	age: {
+		type: Number,
+		min: 5,
+		max: 120
+	},
+	gender: {
+		type: String,
+		enum: ['m','f','u']
+	},
 	allowed: {
 		type: Boolean,
 		default: false

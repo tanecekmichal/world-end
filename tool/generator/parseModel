@@ -1,10 +1,22 @@
 #!/usr/bin/env node
 /* Mongo model parser
  * @author Michal Tanecek
- * @version 0.0.5
+ * @version 0.0.6
  * @licence BSD
- * @todo: Enums, Mongoose validators (min,max,match),remove forEach with exception to FOR loop
- *
+ * @todo: Relations
+
+ * version history:
+ * 0.0.6:
+ * added support fot validate callback functions
+ * added support for buld-in validators min,max,match
+ * added toString functionality for default values - functions
+ * fix for default values: false (Boolean ..)
+ * add support for mongoose enum - select tag
+ * remove forEach break hack
+ * cleaned code
+ * minor changes for tamplate
+ * 0.0.5:
+ * initial import
  */
 var  program = require('commander')
 	,fs = require('fs')
@@ -18,17 +30,18 @@ var _modelFile;
 var _patches = '//[patches\n\n\n//patches]';
 
 var primitives = ['Email','Url','Number','Date','Boolean','String'];
-var inputConversion = {'Email': 'email','Url': 'url', 'Number':'number','Date':'date','Boolean' : 'checkbox','String':'text'};
+var inputConversion = {'Email': 'email','Url': 'url', 'Number':'number','Date':'date','Boolean':'checkbox','String':'text'};
 var marks = ['required','unique','disabled','disabled'];
 var filters = ['lowercase' ,'uppercase','trim'];
 
 program
-  .version('0.0.5')
+  .version('0.0.6')
   .option('-m, --model [name]', 'Set model')
   .option('-p, --path [path]','Set custom model path', path.normalize('../../app/model'))
   .option('-f, --force','Force parser to rewrite exists file')
   .option('-r, --revision','Set model revision','0.0.1')
   .parse(process.argv);
+
 
 if(!program.model) {
 	console.error('Error: Provide model, for more information run script with --help argument.')
@@ -73,7 +86,7 @@ var _tmpl = [
 	,');\n'
 	,'//]\n'
 	,'#patches#'
-	,'\n model.form.schema = schema;'
+	,'\nmodel.form.schema = schema;'
 	,'\nexports = module.exports = model;'
 ];
 var replaces = {
@@ -107,84 +120,139 @@ function parse(source) {
 	for(i =0; i < props.length; i++) {
 		// simple types
 		if(typeof source[props[i]] == 'function') {
-			try {
-				primitives.forEach(function(item){
-					var re = new RegExp(item,"g");
-					if((source[props[i]].toString().match(re) || item == 'String') && (props[i] != '__v')) {
-						target[props[i]] = {
-							type: inputConversion[item]
-						}
-						throw BreakException;
+			var j;
+			for(j =0; j < primitives.length; j++) {
+				var item = primitives[j];
+				var re = new RegExp(item,"g");
+				if((source[props[i]].toString().match(re) || item == 'String') && (props[i] != '__v')) {
+					target[props[i]] = {
+						type: inputConversion[item]
 					}
-				})
-			} catch(e) {}   	
+				}
+			break;
+			}
 		} 
 		// objects
 		else {
 			// field
 			if(typeof source[props[i]].type != 'undefined') {
 				var type = (source[props[i]].type.toString()).replace('function ','')
-				//console.log(type,props[i])
 				if(props[i] == '_id') {
 					target[props[i]] = {
 						type: 'Text',
 						pk : true
 					}
-
 				} else {
-					try {
-						primitives.forEach(function(item){
-							var re = new RegExp('^'+item,"g");
-							var field = source[props[i]];
-							if(type.match(re) || item == 'String') {
-								target[props[i]] = {
-									type: inputConversion[item]
+					var j;
+					for(j =0; j < primitives.length; j++) {
+						var item = primitives[j];
+						var re = new RegExp('^'+item,"g");
+						var field = source[props[i]];
+						if(type.match(re) || item == 'String') {
+							target[props[i]] = {
+								type: inputConversion[item]
+							}
+							
+							marks.forEach(function(j){
+								if(field[j])
+									target[props[i]][j] = true;
+							});
+							
+							filters.forEach(function(j){
+								if(field[j]) {
+									if(target[props[i]].filters === undefined)
+										target[props[i]].filters = [];
+									target[props[i]].filters.push(j);
 								}
-								marks.forEach(function(j){
-									if(field[j])
-										target[props[i]][j] = true;
-								});
-								filters.forEach(function(j){
-									if(field[j]) {
-										if(target[props[i]].filters === undefined)
-											target[props[i]].filters = [];
-										target[props[i]].filters.push(j);
+							});
+							
+							if(field.validate) {
+								if(typeof field.validate.toString !== undefined) {
+									if(!Array.isArray(target[props[i]].validators))
+										target[props[i]].validators = [];
+								}
+								if(Array.isArray(field.validate)) {
+									if(typeof field.validate[0].toString !== undefined) {
+										target[props[i]].validators.push([field.validate[0].toString(),field.validate[1]]);
+									} else {
+										console.log('Unkown function as default value for field props[i], using JSON.stringify, so check it plese in result.')
+										target[props[i]].validators.push([JSON.stringify(field[0].validate),field.validate[1]]);
 									}
-								});
-								if(field.fulltext)
-									target[props[i]].type = 'textarea';
-								if(field.default) {
-									switch(typeof field.default) {
-										case 'function':
+
+								} else {
+									if(typeof field.validate.toString !== undefined) {
+										target[props[i]].validators.push(field.validate.toString());
+									} else {
+										console.log('Unkown function as default value for field props[i], using JSON.stringify, so check it plese in result.')
+										target[props[i]].validators.push(JSON.stringify(field.validate));
+									}
+								}
+							}
+
+							if(field.enum) {
+								target[props[i]].type = 'select';
+								target[props[i]].options = field.enum;
+							}
+							
+							if(field.fulltext)
+								target[props[i]].type = 'textarea';
+							
+							if(field.default !== undefined) {
+								switch(typeof field.default) {
+									case 'function':
+										if(typeof field.default.toString !== undefined) {
 											var def = field.default.toString();
 											if(def.match(/^function now/)) {
-												var fn = function() {return new Date();}
+												var fn = new Function('return new Date()');
 												target[props[i]].default = fn.toString();
+											} else {
+												target[props[i]].default = field.default.toString();
 											} 
-										break;
+										} else {
+											console.log('Unkown function as default value for field props[i], using JSON.stringify, so check it plese in result.')
+											target[props[i]].default = JSON.stringify(field.default);
+										}
+									break;
 
-										default:
-											target[props[i]].default = field.default;
-										break; 
-									}
-									
+									default:
+										target[props[i]].default = field.default;
+									break; 
 								}
-								throw BreakException;
+								
 							}
-						})
-					} catch(e) {
-						//console.log(props[i])
-					}   	
+							// build-in validators
+							if(field.min) {
+								if(!Array.isArray(target[props[i]].validators))
+									target[props[i]].validators = [];
+								
+								var fn = ['if (v <',field.min,') {return false;} else {return true;}'] 
+								target[props[i]].validators.push(new Function('v',fn.join('')).toString());
+							}
+							if(field.max) {
+								if(!Array.isArray(target[props[i]].validators))
+									target[props[i]].validators = [];
+								
+								var fn = ['if (v >',field.max,') {return false;} else {return true;}'] 
+								target[props[i]].validators.push(new Function('v',fn.join('')).toString());
+							}
+							if(field.match !== undefined) {
+								if(!Array.isArray(target[props[i]].validators))
+									target[props[i]].validators = [];
+								
+								var fn = ['if (v.match(<',field.match.toString(),')) {return true;} else {return false;}'] 
+								target[props[i]].validators.push(new Function('v',fn.join('')).toString());
 
+							}
+						break;
+						}
+					}
 				}
 			} 
 			// array of fields .. or error in schema
 			else {
 				target[props[i]] = parse(source[props[i]]);
-				//console.log(source[props[i]])
 			}
 		}
-	
 	}
 	return target;
 }
