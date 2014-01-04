@@ -2,7 +2,7 @@
  * Parsed mongoose model - `harbinger`
  * @revision undefined
  * @parser_version 0.0.7
- * @generated 2014-01-04T22:02:08.889Z
+ * @generated 2014-01-04T22:44:47.636Z
  */
 
 //[
@@ -24,10 +24,14 @@ var schema = JSON.parse({
 		"default": "wiki"
 	},
 	"author": {
-		"type": "text"
+		"type": "text",
+		"ref": [
+			"user",
+			"email"
+		]
 	},
 	"_id": {
-		"type": "Text",
+		"type": "text",
 		"pk": true
 	}
 });

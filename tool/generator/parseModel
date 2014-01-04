@@ -7,6 +7,7 @@
 
  * version history:
  * 0.0.7:
+ * added support for ref
  * replace whitespaces with tab \x20{4} => \t
  * 0.0.6:
  * added support fot validate callback functions
@@ -145,111 +146,36 @@ function parse(source) {
 				var type = (source[props[i]].type.toString()).replace('function ','')
 				if(props[i] == '_id') {
 					target[props[i]] = {
-						type: 'Text',
+						type: 'text',
 						pk : true
 					}
 				} else {
-					var j;
+					var j,found = false;
 					for(j =0; j < primitives.length; j++) {
-						var item = primitives[j];
-						var re = new RegExp('^'+item,"g");
-						var field = source[props[i]];
-						
-						if(type.match(re) || item == 'String') {
+						var re = new RegExp('^'+primitives[j],"g");
+						if(type.match(re)) {
+							target[props[i]] = field(props[i],primitives[j],source[props[i]]);
+							found = true;
+							break;
+						}						
+					}
+					if(!found) {
+						// ref field
+						if(type.match(/^ObjectId/)) {
+							if(typeof source[props[i]] == 'string') {
 								target[props[i]] = {
-								type: inputConversion[item]
-							}
-							
-							marks.forEach(function(j){
-								if(field[j])
-									target[props[i]][j] = true;
-							});
-							
-							filters.forEach(function(j){
-								if(field[j]) {
-									if(target[props[i]].filters === undefined)
-										target[props[i]].filters = [];
-									target[props[i]].filters.push(j);
+									type: 'text',
+									ref: source[props[i]].ref_to
 								}
-							});
-							
-							if(field.validate) {
-								if(!Array.isArray(target[props[i]].validators))
-									target[props[i]].validators = [];
-
-								if(Array.isArray(field.validate)) {
-									if(typeof field.validate[0].toString !== undefined) {
-										target[props[i]].validators.push([field.validate[0].toString(),field.validate[1]]);
-									} else {
-										console.log('Unkown function as default value for field props[i], using JSON.stringify, so check it plese in result.')
-										target[props[i]].validators.push([JSON.stringify(field[0].validate),field.validate[1]]);
-									}
-
-								} else {
-									if(typeof field.validate.toString !== undefined) {
-										target[props[i]].validators.push(field.validate.toString());
-									} else {
-										console.log('Unkown function as default value for field props[i], using JSON.stringify, so check it plese in result.')
-										target[props[i]].validators.push(JSON.stringify(field.validate));
-									}
+							} else if (typeof source[props[i]] == 'function') {
+								target[props[i]] = {
+									type: 'text',
+									ref: [source[props[i]].ref_to[0],source[props[i]].ref_to[0].toString()]
 								}
-							}
 
-							if(field.enum) {
-								target[props[i]].type = 'select';
-								target[props[i]].options = field.enum;
-							}
-							
-							if(field.fulltext)
-								target[props[i]].type = 'textarea';
-							
-							if(field.default !== undefined) {
-								switch(typeof field.default) {
-									case 'function':
-										if(typeof field.default.toString !== undefined) {
-											var def = field.default.toString();
-											if(def.match(/^function now/)) {
-												var fn = new Function('return new Date()');
-												target[props[i]].default = fn.toString();
-											} else {
-												target[props[i]].default = field.default.toString();
-											} 
-										} else {
-											console.log('Unkown function as default value for field props[i], using JSON.stringify, so check it plese in result.')
-											target[props[i]].default = JSON.stringify(field.default);
-										}
-									break;
-
-									default:
-										target[props[i]].default = field.default;
-									break; 
-								}
-								
-							}
-							// build-in validators
-							if(field.min) {
-								if(!Array.isArray(target[props[i]].validators))
-									target[props[i]].validators = [];
-								
-								var fn = ['if (v <',field.min,') {return false;} else {return true;}'] 
-								target[props[i]].validators.push(new Function('v',fn.join('')).toString());
-							}
-							if(field.max) {
-								if(!Array.isArray(target[props[i]].validators))
-									target[props[i]].validators = [];
-								
-								var fn = ['if (v >',field.max,') {return false;} else {return true;}'] 
-								target[props[i]].validators.push(new Function('v',fn.join('')).toString());
-							}
-							if(field.match !== undefined) {
-								if(!Array.isArray(target[props[i]].validators))
-									target[props[i]].validators = [];
-								
-								var fn = ['if (v.match(<',field.match.toString(),')) {return true;} else {return false;}'] 
-								target[props[i]].validators.push(new Function('v',fn.join('')).toString());
-
-							}
-						break;
+							} 
+						} else {
+							console.log('Unkown field `'+props[i]+'` - skipping.')
 						}
 					}
 				}
@@ -261,4 +187,101 @@ function parse(source) {
 		}
 	}
 	return target;
+}
+function field(key,type,data) {
+	var obj = {};
+	obj = {
+		type: inputConversion[type]
+	}
+	
+	marks.forEach(function(j){
+		if(data[j])
+			obj[j] = true;
+	});
+	
+	filters.forEach(function(j){
+		if(data[j]) {
+			if(obj.filters === undefined)
+				obj.filters = [];
+			obj.filters.push(j);
+		}
+	});
+	
+	if(data.validate) {
+		if(!Array.isArray(obj.validators))
+			obj.validators = [];
+
+		if(Array.isArray(data.validate)) {
+			if(typeof data.validate[0].toString !== undefined) {
+				obj.validators.push([data.validate[0].toString(),data.validate[1]]);
+			} else {
+				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
+				obj.validators.push([JSON.stringify(data.validate[0]),data.validate[1]]);
+			}
+
+		} else {
+			if(typeof data.validate.toString !== undefined) {
+				obj.validators.push(data.validate.toString());
+			} else {
+				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
+				obj.validators.push(JSON.stringify(data.validate));
+			}
+		}
+	}
+
+	if(data.enum) {
+		obj.type = 'select';
+		obj.options = data.enum;
+	}
+	
+	if(data.fulltext)
+		obj.type = 'textarea';
+	
+	if(data.default !== undefined) {
+		switch(typeof data.default) {
+			case 'function':
+				if(typeof data.default.toString !== undefined) {
+					var def = data.default.toString();
+					if(def.match(/^function now/)) {
+						var fn = new Function('return new Date()');
+						obj.default = fn.toString();
+					} else {
+						obj.default = data.default.toString();
+					} 
+				} else {
+					console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
+					obj.default = JSON.stringify(data.default);
+				}
+			break;
+
+			default:
+				obj.default = data.default;
+			break; 
+		}
+		
+	}
+	// build-in validators
+	if(data.min) {
+		if(!Array.isArray(obj.validators))
+			obj.validators = [];
+		
+		var fn = ['if (v <',data.min,') {return false;} else {return true;}'] 
+		obj.validators.push(new Function('v',fn.join('')).toString());
+	}
+	if(data.max) {
+		if(!Array.isArray(obj.validators))
+			obj.validators = [];
+		
+		var fn = ['if (v >',data.max,') {return false;} else {return true;}'] 
+		obj.validators.push(new Function('v',fn.join('')).toString());
+	}
+	if(data.match !== undefined) {
+		if(!Array.isArray(obj.validators))
+			obj.validators = [];
+		
+		var fn = ['if (v.match(<',data.match.toString(),')) {return true;} else {return false;}'] 
+		obj.validators.push(new Function('v',fn.join('')).toString());
+
+	}
+	return obj;
 }

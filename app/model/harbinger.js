@@ -22,7 +22,8 @@ var harbingerSchema = new Schema({
 	author: {
 		type: Schema.Types.ObjectId,
 		ref: userSchema,
-		ref_to: 'user.email'
+
+		ref_to: ['user','email']
 	},
 }, { id: false });
 
