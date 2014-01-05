@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /* Mongo model parser
  * @author Michal Tanecek
- * @version 0.0.7
+ * @version 0.0.8
  * @licence BSD
  * @todo: Relations
 
  * version history:
+ * 0.0.8:
+ * removed functions for validators due to used form generator 
  * 0.0.7:
  * added support for ref
  * replace whitespaces with tab \x20{4} => \t
@@ -38,7 +40,7 @@ var marks = ['required','unique','disabled','disabled'];
 var filters = ['lowercase' ,'uppercase','trim'];
 
 program
-  .version('0.0.7')
+  .version('0.0.8')
   .option('-m, --model [name]', 'Set model')
   .option('-p, --path [path]','Set custom model path', path.normalize('../../app/model'))
   .option('-f, --force','Force parser to rewrite exists file')
@@ -213,7 +215,7 @@ function field(key,type,data) {
 
 		if(Array.isArray(data.validate)) {
 			if(typeof data.validate[0].toString !== undefined) {
-				obj.validators.push([data.validate[0].toString(),data.validate[1]]);
+				obj.validators.push([data.validate[0],data.validate[1]]);
 			} else {
 				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
 				obj.validators.push([JSON.stringify(data.validate[0]),data.validate[1]]);
@@ -221,7 +223,7 @@ function field(key,type,data) {
 
 		} else {
 			if(typeof data.validate.toString !== undefined) {
-				obj.validators.push(data.validate.toString());
+				obj.validators.push(data.validate);
 			} else {
 				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
 				obj.validators.push(JSON.stringify(data.validate));
@@ -238,20 +240,15 @@ function field(key,type,data) {
 		obj.type = 'textarea';
 	
 	if(data.default !== undefined) {
+
 		switch(typeof data.default) {
 			case 'function':
-				if(typeof data.default.toString !== undefined) {
-					var def = data.default.toString();
-					if(def.match(/^function now/)) {
-						var fn = new Function('return new Date()');
-						obj.default = fn.toString();
-					} else {
-						obj.default = data.default.toString();
-					} 
+				var def = data.default.toString();
+				if(def.match(/^function now/)) {
+					obj.default = 'function() {return new Date()}'
 				} else {
-					console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
-					obj.default = JSON.stringify(data.default);
-				}
+					obj.default = data.default;
+				} 
 			break;
 
 			default:
@@ -264,24 +261,18 @@ function field(key,type,data) {
 	if(data.min) {
 		if(!Array.isArray(obj.validators))
 			obj.validators = [];
-		
-		var fn = ['if (v <',data.min,') {return false;} else {return true;}'] 
-		obj.validators.push(new Function('v',fn.join('')).toString());
+		obj.validators.push(['min',data.min]);
 	}
 	if(data.max) {
 		if(!Array.isArray(obj.validators))
 			obj.validators = [];
+		obj.validators.push(['max',data.max]);
 		
-		var fn = ['if (v >',data.max,') {return false;} else {return true;}'] 
-		obj.validators.push(new Function('v',fn.join('')).toString());
 	}
 	if(data.match !== undefined) {
 		if(!Array.isArray(obj.validators))
 			obj.validators = [];
-		
-		var fn = ['if (v.match(<',data.match.toString(),')) {return true;} else {return false;}'] 
-		obj.validators.push(new Function('v',fn.join('')).toString());
-
+		obj.validators.push(['match',data.match]);
 	}
 	return obj;
 }
