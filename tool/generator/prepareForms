@@ -1,0 +1,137 @@
+#!/usr/bin/env node
+var  program = require('commander')
+	,fs = require('fs')
+	,path = require('path')
+	,forms = require(__dirname+'/../libs/form')
+	,async = require('async')
+	;
+//console.log(forms.toString())
+var _model;
+var _modelFile;
+var _formDir;
+var _middlewareDir;
+var _patches;
+
+program
+  .version('0.0.2')
+  .option('-m, --parsed_model [name]', 'Set model')
+  .option('-p, --path [path]','Set custom model path', path.normalize('../../app/model'))
+  .option('-f, --force','Force parser to rewrite exists file')
+  .option('-r, --revision','Set forms revision','0.0.1')
+  .parse(process.argv);
+
+  if(!program.parsed_model) {
+	console.error('Error: Provide model, for more information run script with --help argument.')
+	process.exit();
+}
+_path = path.normalize(program.path);
+
+if(program.parsed_model.match('/.js$/'))
+	_modelFile = _path+'/'+program.parsed_model.replace('/.js$/','')+'.parsed';
+else
+	_modelFile = _path+'/'+program.parsed_model+'.parsed';
+
+_model = require(_modelFile);
+
+_formDir = path.normalize(__dirname+'/../../app/resources/form/'+program.parsed_model)
+if(!fs.existsSync(_formDir)) {
+	fs.mkdirSync(_formDir)
+}
+_middlewareDir = path.normalize(__dirname+'/../../app/resources/middleware/'+program.parsed_model);
+
+if(!fs.existsSync(_middlewareDir)) {
+	fs.mkdirSync(_middlewareDir)
+}
+
+var i,actions = Object.getOwnPropertyNames(_model.form.actions);
+
+
+var _form_tmpl = [
+	 '//-\n'
+	,'//- Prepared form for model: `#model#`, action: `#action#`\n'
+	,'//- @revision #revision#\n'
+	,'//- @parser_version #parser_version#\n'
+	,'//- @generated #iso#\n'
+	,'#form#'
+	,'\n//-'
+];
+var _form_replaces = {
+	 'model' : program.parsed_model
+	,'revision': program.revision
+	,'parser_version': program._version
+	,'iso' : new Date().toISOString()
+};
+
+for (i =0;i< actions.length;i++) {
+	var prop =actions[i];
+	var item =_model.form.actions[prop]; 
+	(function(action){createForm(prop,item,function(data){
+		var tmp = [];
+		tmp.push('mixin form_'+action+'()')
+		tmp.push('\n\t-'+action+'= '+action+' || {}')
+		tmp.push('\n\t-'+action+'.errors ='+action+'.errors || {}')
+		tmp.push('\n\t-'+action+'.val ='+action+'.val || {}')
+		tmp.push('\n\t'+data.replace(/\n/g,'\n\t'));
+		tmp = tmp.join('')
+
+		var tpl = new String(_form_tmpl.join(''));
+		Object.keys(_form_replaces).forEach(function(i){
+			tpl = tpl.replace('#'+i+'#',_form_replaces[i])
+		})
+		tpl = tpl.replace('#action#',action);
+		tpl = tpl.replace('#form#',tmp)
+		fs.writeFileSync(_formDir+'/'+action+'.jade',tpl)
+	})
+	}(prop));
+}
+
+
+
+//_tmpl = vocabulary_replace(replaces,_tmpl.join(''));
+
+
+function createForm(name,data,cb) {
+	var f = [];
+	var action = name;
+	var type = data.type;
+	var fields = data.fields;
+	var i;
+	for(i =0; i < fields.length; i++) {
+		var item = fields[i];
+		var field = _model.form.schema[item];
+		if(typeof field.type == 'undefined') {
+			Object.keys(field).forEach(function(j){
+				f.push(createField.bind(createField,name,item+'['+j+']',field[j]))
+			})
+			
+		} else {
+			f.push(createField.bind(createField,name,item,field))
+		}
+	}
+	async.parallel(f,function(err,data){
+		cb(data.join('\n'));
+
+	})
+}
+
+function createField(action,name,data,callback) {
+	var i = new forms[data.type](action,{
+		id: name,
+		type : data.type,
+		label: name
+	})
+	if(data.options) {
+		data.options.forEach(function(r){
+			i.options[r] =r;
+		})
+	}
+	i.toJade(function(err,jade){
+		if(err)
+			console.log(err);
+		callback(false,jade);
+		return;
+	});
+	
+	
+}
+//console.log(_model.form)

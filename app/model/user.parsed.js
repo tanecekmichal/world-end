@@ -2,7 +2,7 @@
  * Parsed mongoose model - `user`
  * @revision undefined
  * @parser_version 0.0.9
- * @generated 2014-01-06T10:33:09.675Z
+ * @generated 2014-01-06T10:37:51.225Z
  */
 
 //[
@@ -26,13 +26,21 @@ var schema = {
 		middle: {
 			type: 'text',
 			filters: ['trim'],
-			validators: ['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}']
+			validators: [
+				['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}',
+					'Name length must be between 4 and 50 chars.'
+				]
+			]
 		},
 		last: {
 			type: 'text',
 			required: true,
 			filters: ['trim'],
-			validators: ['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}']
+			validators: [
+				['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}',
+					'Name length must be between 4 and 50 chars.'
+				]
+			]
 		}
 	},
 	email: {
@@ -86,7 +94,33 @@ var schema = {
 };
 //]
 //[patches
+['verified','user_group','added','allowed'].forEach(function(i){
+	schema[i].disabled = true;
+})
 
+schema.password = {
+	type: 'password',
+	validators: [
+		['minlength',false,6],
+		['maxlength',false,20]
+	]
+}
+schema.password2 = {
+	type: 'password',
+	validators: [
+		['minlength',false,6],
+		['maxlength',false,20],
+		['same',false,'password']
+	]
+}
+
+
+model.form.actions = {
+	register : {
+		type: 'add',
+		fields : ['email','password','password2','name','gender','age','bio']
+	}
+}
 
 //patches]
 model.form.schema = schema;

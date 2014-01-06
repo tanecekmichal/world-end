@@ -23,11 +23,11 @@
       "async":"latest",
       "mime":"latest",
       "js-beautify" : "latest",
+      
       "mongo" : "latest",
       "mongoose" : "latest",
       "mongoose-types" : "latest",
       
-      "forms" : "git://github.com/tanecekmichal/forms.git",
       "html2jade" : "latest",
       
       "colors" : "latest",
@@ -35,7 +35,9 @@
 
       "commander" : "latest",
 
-      "baucis" : "latest"
+      "baucis" : "latest",
+
+      "clone" : "latest"
   
     }
 }

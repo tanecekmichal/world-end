@@ -22,10 +22,10 @@ var userSchema = new Schema({
 	    	 type: String
 	    	,required: false
 	    	,trim: true
-	    	,validate: nameLength
+	    	,validate: [nameLength,nameError]
 	    },	
 	    
-	    last: { type: String, required: true, trim: true,validate: nameLength}	
+	    last: { type: String, required: true, trim: true, validate: [nameLength,nameError]}	
 	},
 
 	email: { 
