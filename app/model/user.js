@@ -8,14 +8,14 @@ var Schema = mongoose.Schema;
 var Email = mongoose.SchemaTypes.Email;
 
 var nameLength = function(v) {if(v.length < 4 || v.length > 50) { return false } return true;}
-
+var nameError = 'Name length must be between 4 and 50 chars.';
 var userSchema = new Schema({
 	name: {
 	    first: { 
 	    	 type: String
 	    	,required: true
 	    	,trim: true
-	    	,validate: nameLength
+	    	,validate: [nameLength,nameError]
 	    },
 	    
 	    middle: { 
@@ -25,7 +25,7 @@ var userSchema = new Schema({
 	    	,validate: nameLength
 	    },	
 	    
-	    last: { type: String, required: true, trim: true}	
+	    last: { type: String, required: true, trim: true,validate: nameLength}	
 	},
 
 	email: { 
@@ -33,7 +33,7 @@ var userSchema = new Schema({
 		,unique: true
 		,required: true
 		,trim: true
-		,validate: nameLength
+		
 	},	
 
 	pass_hash: {type: String, disabled: true },

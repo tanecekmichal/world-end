@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+var  program = require('commander')
+	,fs = require('fs')
+	,path = require('path')
+	;
+
+var _model;
+
+
+var primitives = ['Email','Url','Number','Date','Boolean','String'];
+
+program
+  .version('0.0.1')
+  .option('-m, -- parsed model [name]', 'Set model')
+  .option('-p, --path [path]','Set custom model path', path.normalize('../../app/model'))
+  .option('-f, --force','Force parser to rewrite exists file')
+  .option('-r, --revision','Set forms revision','0.0.1')
+  .parse(process.argv);
+
+  if(!program.model) {
+	console.error('Error: Provide model, for more information run script with --help argument.')
+	process.exit();
+}
+_path = path.normalize(program.path);
+
+if(program.model.match('/.js$/'))
+	_modelFile = _path+'/'+program.model.replace('/.js$/','')+'.parsed';
+else
+	_modelFile = _path+'/'+program.model+'.parsed';
+
+_model = require(_modelFile);
+
+var file = path.normalize(_path +'/'+program.model+'.parsed.js');

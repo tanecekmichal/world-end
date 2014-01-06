@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 /* Mongo model parser
  * @author Michal Tanecek
- * @version 0.0.8
+ * @version 0.0.9
  * @licence BSD
  * @todo: Relations
 
  * version history:
+ * 0.0.9:
+ * no more JSON - using util.inspect + js-beautify
+ * no more problem with functions
  * 0.0.8:
+ * validators compatibility with node forms
  * removed functions for validators due to used form generator 
  * 0.0.7:
  * added support for ref
@@ -26,6 +30,8 @@
 var  program = require('commander')
 	,fs = require('fs')
 	,path = require('path')
+	,beautify = require('js-beautify').js_beautify
+	,util = require('util')
 	;
 
 var _model;
@@ -40,7 +46,7 @@ var marks = ['required','unique','disabled','disabled'];
 var filters = ['lowercase' ,'uppercase','trim'];
 
 program
-  .version('0.0.8')
+  .version('0.0.9')
   .option('-m, --model [name]', 'Set model')
   .option('-p, --path [path]','Set custom model path', path.normalize('../../app/model'))
   .option('-f, --force','Force parser to rewrite exists file')
@@ -63,8 +69,9 @@ _model = require(_modelFile);
 
 var file = path.normalize(_path +'/'+program.model+'.parsed.js');
 
+_schema = (util.inspect(parse(_model.schema.tree),{ showHidden: false, depth: null }))
+_schema = (beautify(_schema, { indent_size: 4 }))
 
-_schema = JSON.stringify(parse(_model.schema.tree),undefined, 4);
 
 while(_schema.match(/\x20{4}/)) {
 	_schema = _schema.replace(/\x20{4}/,'\t');
@@ -91,9 +98,9 @@ var _tmpl = [
 	,'model.schema = mongooseModel.schema;\n'
 	,'model.entity = mongooseModel.model;\n'
 	,'model.form = {};\n'
-	,'var schema = JSON.parse('
+	,'var schema = '
 	,'#schema#'
-	,');\n'
+	,';\n'
 	,'//]\n'
 	,'#patches#'
 	,'\nmodel.form.schema = schema;'
@@ -164,21 +171,22 @@ function parse(source) {
 					if(!found) {
 						// ref field
 						if(type.match(/^ObjectId/)) {
-							if(typeof source[props[i]] == 'string') {
+							if(Array.isArray(source[props[i]].ref_to)) {
 								target[props[i]] = {
 									type: 'text',
 									ref: source[props[i]].ref_to
 								}
-							} else if (typeof source[props[i]] == 'function') {
+							} else if (typeof source[props[i]].ref_to == 'function') {
 								target[props[i]] = {
 									type: 'text',
-									ref: [source[props[i]].ref_to[0],source[props[i]].ref_to[0].toString()]
+									ref: source[props[i]].ref_to[0].toString()
 								}
 
 							} 
 						} else {
 							console.log('Unkown field `'+props[i]+'` - skipping.')
 						}
+						
 					}
 				}
 			} 
@@ -215,7 +223,15 @@ function field(key,type,data) {
 
 		if(Array.isArray(data.validate)) {
 			if(typeof data.validate[0].toString !== undefined) {
-				obj.validators.push([data.validate[0],data.validate[1]]);
+ 				//var fn = data.validate.toString();
+ 				//var args = fn.match(/\([^\)]*/)[0].replace(/\(|\x20|\r|\n|\t/,'').split(',')
+ 				//var body = fn.match(/\{(.|[\r\n\t])*\}/)[0]
+ 				//	.replace(/^(\x20|[\r\n\t])*\{(\x20|[\r\n\t])*/,'')
+ 				//	.replace(/(\x20|[\r\n\t])*\}(\x20|[\r\n\t])*$/,'')
+ 				//	.replace(/[\r\n\t]*/,'')
+ 				//args.push(body);
+				//obj.validators.push(['fn',data.validate[1],args]);
+				obj.validators.push([data.validate[0].toString(),data.validate[1]])
 			} else {
 				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
 				obj.validators.push([JSON.stringify(data.validate[0]),data.validate[1]]);
@@ -223,7 +239,15 @@ function field(key,type,data) {
 
 		} else {
 			if(typeof data.validate.toString !== undefined) {
-				obj.validators.push(data.validate);
+ 				//var fn = data.validate.toString();
+ 				//var args = fn.match(/\([^\)]*/)[0].replace(/\(|\x20|\r|\n|\t/,'').split(',')
+ 				//var body = fn.match(/\{(.|[\r\n\t])*\}/)[0]
+ 				//	.replace(/^(\x20|[\r\n\t])*\{(\x20|[\r\n\t])*/,'')
+ 				//	.replace(/(\x20|[\r\n\t])*\}(\x20|[\r\n\t])*$/,'')
+ 				//	.replace(/[\r\n\t]*/,'')
+ 				//args.push(body);
+				//obj.validators.push(['fn',null,args]);
+				obj.validators.push(data.validate.toString())
 			} else {
 				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
 				obj.validators.push(JSON.stringify(data.validate));
@@ -261,18 +285,18 @@ function field(key,type,data) {
 	if(data.min) {
 		if(!Array.isArray(obj.validators))
 			obj.validators = [];
-		obj.validators.push(['min',data.min]);
+		obj.validators.push(['min','Value must be bigger than %i',data.min]);
 	}
 	if(data.max) {
 		if(!Array.isArray(obj.validators))
 			obj.validators = [];
-		obj.validators.push(['max',data.max]);
+		obj.validators.push(['max','Value must be less than %i',data.max]);
 		
 	}
 	if(data.match !== undefined) {
 		if(!Array.isArray(obj.validators))
 			obj.validators = [];
-		obj.validators.push(['match',data.match]);
+		obj.validators.push(['match','Value must match provided pattern. '+data.match,data.max]);
 	}
 	return obj;
 }

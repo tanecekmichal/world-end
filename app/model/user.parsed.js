@@ -1,8 +1,8 @@
 /*
  * Parsed mongoose model - `user`
  * @revision undefined
- * @parser_version 0.0.7
- * @generated 2014-01-05T01:16:56.806Z
+ * @parser_version 0.0.9
+ * @generated 2014-01-06T10:33:09.675Z
  */
 
 //[
@@ -11,102 +11,82 @@ var mongooseModel = require('../../app/model/user');
 model.schema = mongooseModel.schema;
 model.entity = mongooseModel.model;
 model.form = {};
-var schema = JSON.parse({
-	"name": {
-		"first": {
-			"type": "text",
-			"required": true,
-			"filters": [
-				"trim"
-			],
-			"validators": [
-				null
+var schema = {
+	name: {
+		first: {
+			type: 'text',
+			required: true,
+			filters: ['trim'],
+			validators: [
+				['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}',
+					'Name length must be between 4 and 50 chars.'
+				]
 			]
 		},
-		"middle": {
-			"type": "text",
-			"filters": [
-				"trim"
-			],
-			"validators": [
-				null
-			]
+		middle: {
+			type: 'text',
+			filters: ['trim'],
+			validators: ['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}']
 		},
-		"last": {
-			"type": "text",
-			"required": true,
-			"filters": [
-				"trim"
-			]
+		last: {
+			type: 'text',
+			required: true,
+			filters: ['trim'],
+			validators: ['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}']
 		}
 	},
-	"email": {
-		"type": "email",
-		"required": true,
-		"unique": true,
-		"filters": [
-			"trim"
-		],
-		"validators": [
-			null
+	email: {
+		type: 'email',
+		required: true,
+		unique: true,
+		filters: ['trim']
+	},
+	pass_hash: {
+		type: 'text',
+		disabled: true
+	},
+	pass_salt: {
+		type: 'text',
+		disabled: true
+	},
+	bio: {
+		type: 'textarea'
+	},
+	age: {
+		type: 'number',
+		validators: [
+			['min', 'Value must be bigger than %i', 5],
+			['max', 'Value must be less than %i', 120]
 		]
 	},
-	"pass_hash": {
-		"type": "text",
-		"disabled": true
+	gender: {
+		type: 'select',
+		options: ['m', 'f', 'u']
 	},
-	"pass_salt": {
-		"type": "text",
-		"disabled": true
+	allowed: {
+		type: 'checkbox',
+		default: false
 	},
-	"bio": {
-		"type": "textarea"
+	verified: {
+		type: 'checkbox',
+		default: false
 	},
-	"age": {
-		"type": "number",
-		"validators": [
-			[
-				"min",
-				5
-			],
-			[
-				"max",
-				120
-			]
-		]
+	user_group: {
+		type: 'text',
+		default: 'Registered'
 	},
-	"gender": {
-		"type": "select",
-		"options": [
-			"m",
-			"f",
-			"u"
-		]
+	added: {
+		type: 'date',
+		default: 'function() {return new Date()}'
 	},
-	"allowed": {
-		"type": "checkbox",
-		"default": false
-	},
-	"verified": {
-		"type": "checkbox",
-		"default": false
-	},
-	"user_group": {
-		"type": "text",
-		"default": "Registered"
-	},
-	"added": {
-		"type": "date",
-		"default": "function() {return new Date()}"
-	},
-	"_id": {
-		"type": "text",
-		"pk": true
+	_id: {
+		type: 'text',
+		pk: true
 	}
-});
+};
 //]
 //[patches
-schema.allowed.disabled = true;
+
 
 //patches]
 model.form.schema = schema;

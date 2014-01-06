@@ -22,12 +22,14 @@
       "express" : "latest",
       "async":"latest",
       "mime":"latest",
-      
+      "js-beautify" : "latest",
       "mongo" : "latest",
       "mongoose" : "latest",
       "mongoose-types" : "latest",
+      
       "forms" : "git://github.com/tanecekmichal/forms.git",
-
+      "html2jade" : "latest",
+      
       "colors" : "latest",
       "querystring" : "latest",
 

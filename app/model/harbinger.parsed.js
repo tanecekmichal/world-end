@@ -1,8 +1,8 @@
 /*
  * Parsed mongoose model - `harbinger`
  * @revision undefined
- * @parser_version 0.0.7
- * @generated 2014-01-04T22:44:47.636Z
+ * @parser_version 0.0.8
+ * @generated 2014-01-05T02:45:53.380Z
  */
 
 //[
@@ -17,7 +17,7 @@ var schema = JSON.parse({
 	},
 	"added": {
 		"type": "date",
-		"default": "function anonymous() {\nreturn new Date()\n}"
+		"default": "function() {return new Date()}"
 	},
 	"source": {
 		"type": "text",
