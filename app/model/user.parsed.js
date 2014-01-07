@@ -119,6 +119,10 @@ model.form.actions = {
 	register : {
 		type: 'add',
 		fields : ['email','password','password2','name','gender','age','bio']
+	},
+	login: {
+		type: 'sd',
+		fields: ['email','password']
 	}
 }
 

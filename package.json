@@ -28,7 +28,7 @@
       "mongoose" : "latest",
       "mongoose-types" : "latest",
       
-      "html2jade" : "latest",
+      "html2jade" : "git://github.com/tanecekmichal/html2jade.git",
       
       "colors" : "latest",
       "querystring" : "latest",

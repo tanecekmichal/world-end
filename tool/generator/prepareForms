@@ -52,6 +52,7 @@ var _form_tmpl = [
 	,'//- @revision #revision#\n'
 	,'//- @parser_version #parser_version#\n'
 	,'//- @generated #iso#\n'
+	,''
 	,'#form#'
 	,'\n//-'
 ];
@@ -62,6 +63,19 @@ var _form_replaces = {
 	,'iso' : new Date().toISOString()
 };
 
+var _middleware_tmpl = [
+	 '/*\n'
+	,' * Prepared middleware for model: `#model#`, action: `#action#`\n'
+	,' * @revision #revision#\n'
+	,' * @parser_version #parser_version#\n'
+	,' * @generated #iso#\n'
+	,' */'
+	,'exports = module.exports = function(req,res,next) {'
+	,''
+	,'}'
+	,'\n//-'
+
+];
 for (i =0;i< actions.length;i++) {
 	var prop =actions[i];
 	var item =_model.form.actions[prop]; 
@@ -81,6 +95,7 @@ for (i =0;i< actions.length;i++) {
 		tpl = tpl.replace('#action#',action);
 		tpl = tpl.replace('#form#',tmp)
 		fs.writeFileSync(_formDir+'/'+action+'.jade',tpl)
+		console.log('Form for action `'+action+'` done.');
 	})
 	}(prop));
 }
@@ -131,7 +146,9 @@ function createField(action,name,data,callback) {
 		callback(false,jade);
 		return;
 	});
-	
-	
+}
+
+function createValidator(action,name,data,callback) {
+
 }
 //console.log(_model.form)
