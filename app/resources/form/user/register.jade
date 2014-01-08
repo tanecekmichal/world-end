@@ -2,35 +2,35 @@
 //- Prepared form for model: `user`, action: `register`
 //- @revision undefined
 //- @parser_version 0.0.2
-//- @generated 2014-01-06T23:29:56.421Z
+//- @generated 2014-01-08T04:47:43.846Z
 mixin form_register()
 	-register= register || {}
 	-register.errors =register.errors || {}
 	-register.val =register.val || {}
 	.field
 		label(for='email') email
-		input(type='email', name='email', id='email', value=register.val.email|| "")
+		input(type='email', name='email', id='email', required='1', value=register.val.email|| "")
 	
 		-if(Array.isArray(register.errors.email)) {
 			div.error=register.errors.email.join('\n')
 		-}
 	.field
 		label(for='password') password
-		input(type='password', name='password', id='password', value=register.val.password|| "")
+		input(type='password', name='password', id='password', required='1', value=register.val.password|| "")
 	
 		-if(Array.isArray(register.errors.password)) {
 			div.error=register.errors.password.join('\n')
 		-}
 	.field
 		label(for='password2') password2
-		input(type='password', name='password2', id='password2', value=register.val.password2|| "")
+		input(type='password', name='password2', id='password2', required='1', value=register.val.password2|| "")
 	
 		-if(Array.isArray(register.errors.password2)) {
 			div.error=register.errors.password2.join('\n')
 		-}
 	.field
 		label(for='name[first]') name&lsqb;first&rsqb;
-		input(type='text', name='name[first]', id='name[first]', value=register.val.name.first|| "")
+		input(type='text', name='name[first]', id='name[first]', required='1', value=register.val.name.first|| "")
 	
 		-if(Array.isArray(register.errors.name.first)) {
 			div.error=register.errors.name.first.join('\n')
@@ -44,7 +44,7 @@ mixin form_register()
 		-}
 	.field
 		label(for='name[last]') name&lsqb;last&rsqb;
-		input(type='text', name='name[last]', id='name[last]', value=register.val.name.last|| "")
+		input(type='text', name='name[last]', id='name[last]', required='1', value=register.val.name.last|| "")
 	
 		-if(Array.isArray(register.errors.name.last)) {
 			div.error=register.errors.name.last.join('\n')
@@ -61,7 +61,7 @@ mixin form_register()
 		-}
 	.field
 		label(for='age') age
-		input(type='number', name='age', id='age', value=register.val.age|| "")
+		input(type='number', name='age', id='age', min='5', max='120', value=register.val.age|| "")
 	
 		-if(Array.isArray(register.errors.age)) {
 			div.error=register.errors.age.join('\n')

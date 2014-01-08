@@ -2,21 +2,21 @@
 //- Prepared form for model: `user`, action: `login`
 //- @revision undefined
 //- @parser_version 0.0.2
-//- @generated 2014-01-06T23:29:56.421Z
+//- @generated 2014-01-08T04:47:43.846Z
 mixin form_login()
 	-login= login || {}
 	-login.errors =login.errors || {}
 	-login.val =login.val || {}
 	.field
 		label(for='email') email
-		input(type='email', name='email', id='email', value=login.val.email|| "")
+		input(type='email', name='email', id='email', required='1', value=login.val.email|| "")
 	
 		-if(Array.isArray(login.errors.email)) {
 			div.error=login.errors.email.join('\n')
 		-}
 	.field
 		label(for='password') password
-		input(type='password', name='password', id='password', value=login.val.password|| "")
+		input(type='password', name='password', id='password', required='1', value=login.val.password|| "")
 	
 		-if(Array.isArray(login.errors.password)) {
 			div.error=login.errors.password.join('\n')

@@ -2,7 +2,7 @@
  * Parsed mongoose model - `user`
  * @revision undefined
  * @parser_version 0.0.9
- * @generated 2014-01-06T10:37:51.225Z
+ * @generated 2014-01-08T02:01:17.346Z
  */
 
 //[
@@ -18,7 +18,7 @@ var schema = {
 			required: true,
 			filters: ['trim'],
 			validators: [
-				['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}',
+				['function (v) {if(v.length < 4 || v.length > 50) { return false } else {return true;}}',
 					'Name length must be between 4 and 50 chars.'
 				]
 			]
@@ -27,7 +27,7 @@ var schema = {
 			type: 'text',
 			filters: ['trim'],
 			validators: [
-				['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}',
+				['function (v) {if(v.length < 4 || v.length > 50) { return false } else {return true;}}',
 					'Name length must be between 4 and 50 chars.'
 				]
 			]
@@ -37,7 +37,7 @@ var schema = {
 			required: true,
 			filters: ['trim'],
 			validators: [
-				['function (v) {if(v.length < 4 || v.length > 50) { return false } return true;}',
+				['function (v) {if(v.length < 4 || v.length > 50) { return false } else {return true;}}',
 					'Name length must be between 4 and 50 chars.'
 				]
 			]
@@ -100,6 +100,7 @@ var schema = {
 
 schema.password = {
 	type: 'password',
+	required: true,
 	validators: [
 		['minlength',false,6],
 		['maxlength',false,20]
@@ -107,6 +108,7 @@ schema.password = {
 }
 schema.password2 = {
 	type: 'password',
+	required: true,
 	validators: [
 		['minlength',false,6],
 		['maxlength',false,20],

@@ -223,14 +223,6 @@ function field(key,type,data) {
 
 		if(Array.isArray(data.validate)) {
 			if(typeof data.validate[0].toString !== undefined) {
- 				//var fn = data.validate.toString();
- 				//var args = fn.match(/\([^\)]*/)[0].replace(/\(|\x20|\r|\n|\t/,'').split(',')
- 				//var body = fn.match(/\{(.|[\r\n\t])*\}/)[0]
- 				//	.replace(/^(\x20|[\r\n\t])*\{(\x20|[\r\n\t])*/,'')
- 				//	.replace(/(\x20|[\r\n\t])*\}(\x20|[\r\n\t])*$/,'')
- 				//	.replace(/[\r\n\t]*/,'')
- 				//args.push(body);
-				//obj.validators.push(['fn',data.validate[1],args]);
 				obj.validators.push([data.validate[0].toString(),data.validate[1]])
 			} else {
 				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')
@@ -239,14 +231,6 @@ function field(key,type,data) {
 
 		} else {
 			if(typeof data.validate.toString !== undefined) {
- 				//var fn = data.validate.toString();
- 				//var args = fn.match(/\([^\)]*/)[0].replace(/\(|\x20|\r|\n|\t/,'').split(',')
- 				//var body = fn.match(/\{(.|[\r\n\t])*\}/)[0]
- 				//	.replace(/^(\x20|[\r\n\t])*\{(\x20|[\r\n\t])*/,'')
- 				//	.replace(/(\x20|[\r\n\t])*\}(\x20|[\r\n\t])*$/,'')
- 				//	.replace(/[\r\n\t]*/,'')
- 				//args.push(body);
-				//obj.validators.push(['fn',null,args]);
 				obj.validators.push(data.validate.toString())
 			} else {
 				console.log('Unkown function as default value for data key, using JSON.stringify, so check it plese in result.')

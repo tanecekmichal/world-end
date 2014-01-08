@@ -3,7 +3,9 @@ var  program = require('commander')
 	,fs = require('fs')
 	,path = require('path')
 	,forms = require(__dirname+'/../libs/form')
+	,validators =require(__dirname+'/../libs/validators')
 	,async = require('async')
+	,util = require('util')
 	;
 //console.log(forms.toString())
 var _model;
@@ -70,16 +72,20 @@ var _middleware_tmpl = [
 	,' * @parser_version #parser_version#\n'
 	,' * @generated #iso#\n'
 	,' */'
-	,'exports = module.exports = function(req,res,next) {'
-	,''
-	,'}'
-	,'\n//-'
+	,'\n'
+	,'\nexports = module.exports = function(req,res,next) {'
+	,'\n'
+	,'#middleware#'
+	,'\n'
+	,'\n}'
+	
 
 ];
 for (i =0;i< actions.length;i++) {
 	var prop =actions[i];
 	var item =_model.form.actions[prop]; 
-	(function(action){createForm(prop,item,function(data){
+	
+	/*(function(action){createForm(prop,item,function(data){
 		var tmp = [];
 		tmp.push('mixin form_'+action+'()')
 		tmp.push('\n\t-'+action+'= '+action+' || {}')
@@ -97,12 +103,15 @@ for (i =0;i< actions.length;i++) {
 		fs.writeFileSync(_formDir+'/'+action+'.jade',tpl)
 		console.log('Form for action `'+action+'` done.');
 	})
-	}(prop));
+	}(prop));*/
+	//console.log(item.type)
+	(function(action){
+		createFormValidators(action,item)
+	}(prop))
 }
 
 
 
-//_tmpl = vocabulary_replace(replaces,_tmpl.join(''));
 
 
 function createForm(name,data,cb) {
@@ -140,6 +149,29 @@ function createField(action,name,data,callback) {
 			i.options[r] =r;
 		})
 	}
+	if(data.required) {
+		i.opts.required=1
+	}
+	switch(data.type) {
+		case 'number':
+			if(Array.isArray(data.validators)) {
+				data.validators.forEach(function(j){
+					if(Array.isArray(j)) {
+						if(typeof j[0] == 'string') {
+							if(j[0] == 'min')
+								i.opts.min = j[2]
+							if(j[0] == 'max')
+								i.opts.max = j[2]
+						}
+					}
+				})
+			}
+		break;
+
+		default:
+		break;
+	}
+	//console.log(data)
 	i.toJade(function(err,jade){
 		if(err)
 			console.log(err);
@@ -148,7 +180,59 @@ function createField(action,name,data,callback) {
 	});
 }
 
-function createValidator(action,name,data,callback) {
+function createFormValidators(action,actionData) {
+	var vals ={};
+	var i;
+	for(i =0; i < actionData.fields.length; i++) {
+		var item = actionData.fields[i];
+		var field = _model.form.schema[item]
+		//console.log(field.validators)
+		if(typeof field.type == 'undefined') {
+		Object.keys(field).forEach(function(j){
+				if(typeof vals[item] == 'undefined') {
+					vals[item] = {};
+				}
+				vals[item][j] = createValidator(field[j],item+'_'+j,action)
+				//var sub_field = field[j]
+				//console.log(sub_field)
 
+			})
+		} else {
+			vals[item]=createValidator(field,item,action)
+		}
+
+	}
+	var validators = util.inspect(vals,{ showHidden: false, depth: null }).replace(/\[\x20\'/g,'[').replace(/\'\x20\]/g,']')
+		.replace(/\'\,(\x20)*\n(\t|\x20)*\'/g,',')
+	;
+	console.log(validators)
 }
-//console.log(_model.form)
+
+function createValidator(field,fieldname,action) {
+	var vals = [];
+	//console.log(field)
+	if(Array.isArray(field.validators)) {
+		var j =0;
+		field.validators.forEach(function(i){
+			j++
+			if(i[0].match(/^function/)) {
+				var validator = validators.callback(i[0],i[1])
+				fs.writeFileSync(_middlewareDir+'/'+action+'_'+fieldname+'_'+j+'.js',validator)
+				vals.push('require(__dirname+"/'+action+'_'+fieldname+'_'+j+'.js"');
+				
+			} else if(typeof validators[i[0]] == 'function') {
+				if(i[1] === false)
+					vals.push('validators.'+[i[0]]+'('+i[1]+','+i[2]+')')
+				else
+					vals.push('validators.'+[i[0]]+'("'+i[1]+'",'+i[2]+')')
+
+			}
+		})
+	}
+	return vals;
+	//console.log(vals)
+	
+}
+
+
+
