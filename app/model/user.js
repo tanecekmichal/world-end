@@ -7,7 +7,7 @@ var Schema = mongoose.Schema;
 
 var Email = mongoose.SchemaTypes.Email;
 
-var nameLength = function(v) {if(v.length < 4 || v.length > 50) { return false; } else {return true;}}
+var nameLength = function(v) {if(v === undefined ||v.length < 4 || v.length > 50) { return false; } else {return true;}}
 var nameError = 'Name length must be between 4 and 50 chars.';
 var userSchema = new Schema({
 	name: {

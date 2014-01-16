@@ -18,7 +18,7 @@ var schema = {
 			required: true,
 			filters: ['trim'],
 			validators: [
-				['function (v) {if(v.length < 4 || v.length > 50) { return false } else {return true;}}',
+				['function (v) {if(v === undefined ||v.length < 4 || v.length > 50) { return false } else {return true;}}',
 					'Name length must be between 4 and 50 chars.'
 				]
 			]
@@ -27,7 +27,7 @@ var schema = {
 			type: 'text',
 			filters: ['trim'],
 			validators: [
-				['function (v) {if(v.length < 4 || v.length > 50) { return false } else {return true;}}',
+				['function (v) {if(v === undefined ||v.length < 4 || v.length > 50) { return false } else {return true;}}',
 					'Name length must be between 4 and 50 chars.'
 				]
 			]
@@ -37,8 +37,8 @@ var schema = {
 			required: true,
 			filters: ['trim'],
 			validators: [
-				['function (v) {if(v.length < 4 || v.length > 50) { return false } else {return true;}}',
-					'Name length must be between 4 and 50 chars.'
+				['function (v) {if(v === undefined || v.length < 4 || v.length > 50) { return false } else {return true;}}',
+					'Name %s length must be between 4 and 50 chars.'
 				]
 			]
 		}
@@ -111,19 +111,18 @@ schema.password2 = {
 	required: true,
 	validators: [
 		['minlength',false,6],
-		['maxlength',false,20],
-		['same',false,'password']
+		['maxlength',false,20]
 	]
 }
 
 
 model.form.actions = {
 	register : {
-		type: 'add',
+		type: 'post',
 		fields : ['email','password','password2','name','gender','age','bio']
 	},
 	login: {
-		type: 'sd',
+		type: 'post',
 		fields: ['email','password']
 	}
 }

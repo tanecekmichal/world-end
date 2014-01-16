@@ -65,22 +65,17 @@ var _form_replaces = {
 	,'iso' : new Date().toISOString()
 };
 
-var _middleware_tmpl = [
-	 '/*\n'
-	,' * Prepared middleware for model: `#model#`, action: `#action#`\n'
-	,' * @revision #revision#\n'
-	,' * @parser_version #parser_version#\n'
-	,' * @generated #iso#\n'
-	,' */'
-	,'\n'
-	,'\nexports = module.exports = function(req,res,next) {'
-	,'\n'
-	,'#middleware#'
-	,'\n'
-	,'\n}'
+var _middleware_tmpl = fs.readFileSync(__dirname+'/templates/middleware_post.js').toString();
+
+var _middleware_replaces = {
+	 'model' : program.parsed_model
+	,'revision': program.revision
+	,'parser_version': program._version
+	,'iso' : new Date().toISOString()
+};
 	
 
-];
+
 for (i =0;i< actions.length;i++) {
 	var prop =actions[i];
 	var item =_model.form.actions[prop]; 
@@ -192,20 +187,58 @@ function createFormValidators(action,actionData) {
 				if(typeof vals[item] == 'undefined') {
 					vals[item] = {};
 				}
-				vals[item][j] = createValidator(field[j],item+'_'+j,action)
-				//var sub_field = field[j]
-				//console.log(sub_field)
+				vals[item][j]  = [];
+				if(field[j].required === true) {
+					vals[item][j].push('validators.required()');
+				}
+
+				if(field[j].type == 'email')
+					vals[item][j].push('validators.email()')
+				if(field[j].type == 'select')
+					vals[item][j].push('validators.inArray(false,["'+field[j].options.join('","')+'"])')
+				if(field[j].type == 'number')
+					vals[item][j].push('validators.number()')
+
+				createValidator(field[j],item+'_'+j,action).forEach(function(q){
+					vals[item][j].push(q)
+				})
+
 
 			})
 		} else {
-			vals[item]=createValidator(field,item,action)
+			vals[item] = [];
+ 			//vals[item]=createValidator(field,item,action)
+			if(field.required === true) {
+				vals[item].push('validators.required()');
+			}
+			if(field.type == 'email')
+				vals[item].push('validators.email()')
+			if(field.type == 'select')
+				//console.log(field.options.join('\',\''))
+				vals[item].push('validators.inArray(false,["'+field.options.join('","')+'"])')
+			if(field.type == 'number')
+				vals[item].push('validators.number()')
+
+			createValidator(field,item,action).forEach(function(q){
+				vals[item].push(q)
+			})
+
 		}
 
 	}
+	var validators = [];
 	var validators = util.inspect(vals,{ showHidden: false, depth: null }).replace(/\[\x20\'/g,'[').replace(/\'\x20\]/g,']')
 		.replace(/\'\,(\x20)*\n(\t|\x20)*\'/g,',')
+		//.replace(/\n/g,'\n\t')
 	;
 	console.log(validators)
+	var tpl = new String (_middleware_tmpl);
+	Object.keys(_middleware_replaces).forEach(function(i){
+		tpl = tpl.replace('#'+i+'#',_middleware_replaces[i])
+	})
+	tpl = tpl.replace('#validators#',validators).replace(/#action#/g,action)
+	console.log(tpl)
+	fs.writeFileSync(_middlewareDir+'/'+action+'_POST.js',tpl)
 }
 
 function createValidator(field,fieldname,action) {
@@ -218,7 +251,7 @@ function createValidator(field,fieldname,action) {
 			if(i[0].match(/^function/)) {
 				var validator = validators.callback(i[0],i[1])
 				fs.writeFileSync(_middlewareDir+'/'+action+'_'+fieldname+'_'+j+'.js',validator)
-				vals.push('require(__dirname+"/'+action+'_'+fieldname+'_'+j+'.js"');
+				vals.push('require(__dirname+"/'+action+'_'+fieldname+'_'+j+'.js")');
 				
 			} else if(typeof validators[i[0]] == 'function') {
 				if(i[1] === false)
@@ -230,8 +263,7 @@ function createValidator(field,fieldname,action) {
 		})
 	}
 	return vals;
-	//console.log(vals)
-	
+	//console.log(vals)	
 }
 
 
